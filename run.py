@@ -1,4 +1,3 @@
-
 from os import getenv
 from random import randint
 import discord
@@ -28,21 +27,19 @@ async def on_thread_create(thread):
 @bot.event
 async def on_member_join(member):
   cursor.execute(f'SELECT roles FROM roulette WHERE user_id={member.id} AND guild_id={member.guild.id}')
-  result = cursor.fetchone()[0]
+  results = cursor.fetchone()[0]
   roles = []
-  all_roles = {}
-  for role in member.guild.roles:
-    all_roles[role.id] = role
-  
-  for role_id in eval(result):
-    roles.append(all_roles[role_id])
+  for result in eval(results):
+    class role_class:
+      id = result
+    roles.append(role_class)
   await member.add_roles(*roles)
   
   cursor.execute(f'DELETE FROM roulette WHERE user_id={member.id} AND guild_id={member.guild.id}')
 
-@bot.slash_command(name='russian-roulette', description='1 in 6 chance to get kicked')
+@bot.slash_command(name='reverse-roulette', description='1 in 6 chance to not get kicked')
 async def roulette(ctx):
-  if randint(0, 5) == 5:  
+  if randint(0, 5) != 5: 
     if type(ctx.channel) == discord.Thread:
       invite = await ctx.channel.parent.create_invite(max_age=0, max_uses=1)
     else:
@@ -54,8 +51,8 @@ async def roulette(ctx):
     cursor.execute("INSERT INTO roulette (user_id, guild_id, roles) VALUES (%d, %d, '%s')" % (ctx.user.id, ctx.guild.id, str(roles)))
     await ctx.author.send(invite)
     try:
-      await ctx.send(f'{ctx.author.mention} was unlucky. Goodbye!')
       await ctx.author.kick()
+      await ctx.send(f'{ctx.author.mention} was unlucky. Goodbye!')
     except discord.errors.Forbidden:
       await ctx.respond("you couldn't be kicked because you're a discord mod (gross)")
   else:
